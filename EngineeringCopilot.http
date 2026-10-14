@@ -1,0 +1,6 @@
+@EngineeringCopilot_HostAddress = http://localhost:5129
+
+GET {{EngineeringCopilot_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

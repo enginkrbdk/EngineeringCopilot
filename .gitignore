@@ -1,0 +1,31 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build artifacts
+bin/
+obj/
+
+# Test results
+TestResults/
+
+# Rider
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# OS files
+*.DS_Store
+
+# Logs and local env
+*.log
+*.db
+.env
+
+# NuGet
+*.nupkg
+packages/
