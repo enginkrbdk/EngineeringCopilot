@@ -29,3 +29,6 @@ TestResults/
 # NuGet
 *.nupkg
 packages/
+
+# Visual Studio launchSettings.json
+Properties/launchSettings.json

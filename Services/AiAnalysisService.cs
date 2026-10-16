@@ -8,19 +8,25 @@ namespace EngineeringCopilot.Services;
 
 public class AiAnalysisService
 {
-    private readonly ChatClient _chatClient;
+    private readonly ChatClient? _chatClient;
 
     public AiAnalysisService(IConfiguration configuration)
     {
-        // appsettings.json veya Environment Variable'dan API key çekilir
         var apiKey = configuration["OpenAI:ApiKey"] ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-
-        // Hız ve maliyet dengesi için gpt-4o-mini kullanıyoruz
-        _chatClient = new ChatClient("gpt-4o-mini", apiKey);
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            var model = configuration["OpenAI:Model"] ?? "gpt-4o-mini";
+            _chatClient = new ChatClient(model, apiKey);
+        }
     }
 
     public async Task<LogAnalysisResult> AnalyzeErrorLogAsync(LogAnalysisRequest request)
     {
+        if (_chatClient is null)
+        {
+            return AnalyzeLocally(request);
+        }
+
         var systemPrompt = "Sen kıdemli bir DevOps ve Backend mimarısın. Sana iletilen servis hata logunu analiz edeceksin.\n" +
                            "Yanıtını kesinlikle ve sadece aşağıdaki JSON formatında ver, başka hiçbir açıklama metni ekleme:\n" +
                            "{\n  \"rootCause\": \"Hatanın teknik kök nedeni\",\n  \"suggestedFix\": \"Çözüm için atılması gereken adım\",\n  \"severityLevel\": \"Low/Medium/High/Critical\",\n  \"requiresImmediateEscalation\": true veya false\n}";
@@ -41,7 +47,11 @@ public class AiAnalysisService
             options
         );
 
-        var rawResponse = chatCompletion.Value.Content[0].Text;
+        var rawResponse = chatCompletion.Value.Content.FirstOrDefault()?.Text;
+        if (string.IsNullOrWhiteSpace(rawResponse))
+        {
+            return GetFallbackResult("Model boş yanıt verdi.");
+        }
 
         // Markdown blok temizliği (LLM bazen ```json ... ``` dönebilir)
         var cleanedJson = rawResponse.Replace("```json", "").Replace("```", "").Trim();
@@ -58,6 +68,33 @@ public class AiAnalysisService
             // LLM format dışı bir şey döndüğünde sistemin patlamasını önleyen "Graceful Fallback"
             return GetFallbackResult("Model çıktısı beklenen şemaya uymadı.");
         }
+    }
+
+    private static LogAnalysisResult AnalyzeLocally(LogAnalysisRequest request)
+    {
+        var message = request.ErrorMessage;
+        var lowerMessage = message.ToLowerInvariant();
+
+        if (lowerMessage.Contains("timeout") || lowerMessage.Contains("timed out"))
+        {
+            return new LogAnalysisResult
+            {
+                RootCause = $"{request.ServiceName} için bağımlı bir işlem zaman aşımına uğramış. Bu örnek, API anahtarı olmadan çalışan yerel demo analizidir.",
+                SuggestedFix = "Bağımlı servisin erişilebilirliğini, yanıt süresini ve bağlantı havuzu sınırlarını kontrol edin.",
+                SeverityLevel = "High",
+                RequiresImmediateEscalation = false,
+                AnalysisMode = "local-demo"
+            };
+        }
+
+        return new LogAnalysisResult
+        {
+            RootCause = $"{request.ServiceName} hata kaydı alındı; yerel demo modu belirli bir kök neden saptayamadı.",
+            SuggestedFix = "Zaman damgası, ilgili servis logları ve hata anındaki bağımlılık durumunu inceleyin. Gerçek AI analizi için OPENAI_API_KEY tanımlayın.",
+            SeverityLevel = "Medium",
+            RequiresImmediateEscalation = false,
+            AnalysisMode = "local-demo"
+        };
     }
 
     private LogAnalysisResult GetFallbackResult(string reason)

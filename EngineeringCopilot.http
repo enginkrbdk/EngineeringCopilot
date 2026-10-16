@@ -1,6 +1,12 @@
 @EngineeringCopilot_HostAddress = http://localhost:5129
 
-GET {{EngineeringCopilot_HostAddress}}/weatherforecast/
+POST {{EngineeringCopilot_HostAddress}}/api/LogAnalysis/analyze
+Content-Type: application/json
 Accept: application/json
+
+{
+  "serviceName": "PaymentService",
+  "errorMessage": "System.TimeoutException: Database connection timed out after 30 seconds."
+}
 
 ###

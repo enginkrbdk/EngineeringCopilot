@@ -46,4 +46,9 @@ public class LogAnalysisResult
     /// Hemen eskalasyon gerektirip gerektirmediği.
     /// </summary>
     public bool RequiresImmediateEscalation { get; set; }
+
+    /// <summary>
+    /// Analysis source: OpenAI or local-demo.
+    /// </summary>
+    public string AnalysisMode { get; set; } = "openai";
 }

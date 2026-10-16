@@ -13,10 +13,12 @@ namespace EngineeringCopilot.Controllers;
 public class LogAnalysisController : ControllerBase
 {
     private readonly AiAnalysisService _aiAnalysisService;
+    private readonly ILogger<LogAnalysisController> _logger;
 
-    public LogAnalysisController(AiAnalysisService aiAnalysisService)
+    public LogAnalysisController(AiAnalysisService aiAnalysisService, ILogger<LogAnalysisController> logger)
     {
         _aiAnalysisService = aiAnalysisService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -42,8 +44,8 @@ public class LogAnalysisController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Kurumsal standart: Detaylı hata dışarı sızdırılmaz, loglanır
-            return StatusCode(500, new { error = "AI analizi sırasında bir hata oluştu.", details = ex.Message });
+            _logger.LogError(ex, "Log analysis failed for service {ServiceName}", request.ServiceName);
+            return StatusCode(500, new { error = "AI analizi sırasında bir hata oluştu." });
         }
     }
 }
